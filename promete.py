@@ -192,4 +192,10 @@ while running:
     for body in bodies:
         pos_x = int(body.position[0])
         pos_y = int(HEIGHT - body.position[1])
-        pygame.draw.circle(window, body.color)
+        pygame.draw.circle(window, body.color, (pos_x, pos_y), int(body.radius), 0)  # Dibujar el cuerpo
+
+    # Actualizar la pantalla
+    pygame.display.flip()
+
+# Cerrar Pygame
+pygame.quit()

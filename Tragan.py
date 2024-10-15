@@ -13,17 +13,22 @@ MAX_VELOCITY = 10
 WIDTH, HEIGHT = 500, 500
 
 # Clase Vector2D para manejar operaciones vectoriales
+# Clase Vector2D para manejar operaciones vectoriales
 class Vector2D:
     def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
 
+
+#Para sumar dos vectores
     def __add__(self, other: 'Vector2D') -> 'Vector2D':
         return Vector2D(self.x + other.x, self.y + other.y)
-
+    
+#Para restar dos vectores
     def __sub__(self, other: 'Vector2D') -> 'Vector2D':
         return Vector2D(self.x - other.x, self.y - other.y)
 
+#Multiplicación por escalar
     def __mul__(self, scalar: float) -> 'Vector2D':
         return Vector2D(self.x * scalar, self.y * scalar)
 
@@ -35,6 +40,10 @@ class Vector2D:
         if norm > max_value:
             return self * (max_value / norm)
         return self
+
+    def dot(self, other: 'Vector2D') -> float:
+        """Calcula el producto punto entre dos vectores."""
+        return self.x * other.x + self.y * other.y
 
 # Clase para el cuerpo (Body)
 class Body:
@@ -74,6 +83,37 @@ class Physics:
         body.velocity = (body.velocity + body.acceleration * DELTA_T).limit(MAX_VELOCITY)
         body.position = body.position + body.velocity * DELTA_T
 
+# Clase Collision para manejar colisiones elásticas
+class Collision:
+    @staticmethod
+    def detect_collision(body1: Body, body2: Body) -> bool:
+        """Detecta si hay una colisión entre dos cuerpos."""
+        distance = (body2.position - body1.position).norm()
+        return distance < (body1.radius + body2.radius)
+
+    @staticmethod
+    def resolve_collision(body1, body2):
+        # Vector entre las posiciones de los cuerpos
+        delta_position = body2.position - body1.position
+        distance = delta_position.norm()
+
+        # Normalizar el vector de distancia
+        normal = delta_position * (1 / distance)  # Normaliza el vector
+        relative_velocity = body1.velocity - body2.velocity
+        speed = relative_velocity.dot(normal)
+
+        # Si están separándose, no hacemos nada
+        if speed >= 0:
+            return
+
+        # Cálculo de la nueva velocidad tras la colisión
+        impulse = 2 * speed / (body1.mass + body2.mass)
+
+        # Actualizamos las velocidades de los cuerpos
+        body1.velocity -= normal * (impulse * body2.mass)
+        body2.velocity += normal * (impulse * body1.mass)
+
+
 # Clase para la simulación principal
 class Simulation:
     def __init__(self, bodies: List[Body]):
@@ -87,6 +127,12 @@ class Simulation:
                 if body != other_body:
                     total_force += Physics.calculate_gravitational_force(body, other_body)
             Physics.update_body(body, total_force)
+
+        # Detección y resolución de colisiones
+        for i in range(len(self.bodies)):
+            for j in range(i + 1, len(self.bodies)):
+                if Collision.detect_collision(self.bodies[i], self.bodies[j]):
+                    Collision.resolve_collision(self.bodies[i], self.bodies[j])
 
     def assign_orbital_velocities(self, central_body: Body):
         """Asigna velocidades iniciales a los cuerpos para que orbiten el cuerpo central."""
@@ -106,7 +152,7 @@ class Simulation:
 # Inicialización de Pygame
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Simulación de N Cuerpos con Órbitas Estables')
+pygame.display.set_caption('Simulación de N Cuerpos con Órbitas Estables y Colisiones')
 
 # Inicialización de los cuerpos
 bodies = [Body() for _ in range(NUMBER_BODIES)]

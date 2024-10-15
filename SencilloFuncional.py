@@ -1,7 +1,6 @@
 import pygame
 import random
 import math
-from multiprocessing import Pool
 
 # Constantes
 number_bodies = 30
@@ -9,9 +8,8 @@ GRAVITATIONAL_CONSTANT = 1
 DELTA_T = 0.0001
 CUTOFF = 1000000
 width, height = 500, 500
-radius = 2
+radius = 5  # Aumentar el tamaño de los cuerpos
 
-# Clase Body (adaptada del código anterior)
 class Body:
     def __init__(self, position=None, velocity=None, acceleration=None, mass=300000.0):
         if position is None:
@@ -30,7 +28,7 @@ class Body:
         self.position[0] = random.uniform(0.0, 1.0) * max_x
         self.position[1] = random.uniform(0.0, 1.0) * max_y
 
-# Funciones auxiliares para operar con vectores
+# Funciones auxiliares
 def vector_subtract(v1, v2):
     return [v1[0] - v2[0], v1[1] - v2[1]]
 
@@ -43,11 +41,10 @@ def vector_add(v1, v2):
 def norm_of_vector(v):
     return math.sqrt(v[0] ** 2 + v[1] ** 2)
 
-# Función calcular la dinámica de los cuerpos
 def calcular(bodies):
-    for i in range(number_bodies):
+    for i in range(number_bodies + 1):  # Cambia aquí a number_bodies + 1
         sum_forces_i = [0, 0]
-        for j in range(number_bodies):
+        for j in range(number_bodies + 1):  # Cambia aquí a number_bodies + 1
             if i == j:
                 continue
 
@@ -77,9 +74,13 @@ bodies = [Body() for _ in range(number_bodies)]
 for body in bodies:
     body.random_position(width, height)
 
+# Agregar un cuerpo masivo en el centro
+massive_body = Body(position=[width / 2, height / 2], mass=1000000.0)  # Cuerpo masivo en el centro
+bodies.append(massive_body)  # Agregar el cuerpo masivo a la lista de cuerpos
+
 # Crear los círculos para cada cuerpo
 circles = []
-for _ in range(number_bodies):
+for _ in range(number_bodies + 1):  # Cambia aquí a number_bodies + 1
     circle = pygame.Surface((2 * radius, 2 * radius), pygame.SRCALPHA)
     random_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
     pygame.draw.circle(circle, random_color, (radius, radius), radius)
@@ -99,7 +100,7 @@ while running:
     calcular(bodies)
 
     # Dibujar los cuerpos en la pantalla
-    for i in range(number_bodies):
+    for i in range(number_bodies + 1):  # Cambia aquí a number_bodies + 1
         pos_x = int(bodies[i].position[0])
         pos_y = int(height - bodies[i].position[1])
         window.blit(circles[i], (pos_x - radius, pos_y - radius))
