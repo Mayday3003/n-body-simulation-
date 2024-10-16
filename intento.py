@@ -4,11 +4,12 @@ import math
 from typing import List, Tuple
 
 # Constantes
-NUMBER_BODIES = 50
+NUMBER_BODIES = 15
 GRAVITATIONAL_CONSTANT = 1
 DELTA_T = 0.0001
 CUTOFF = 100
 WIDTH, HEIGHT = 500, 500
+FPS = 60
 
 # Clase para representar puntos en el QuadTree
 class Point:
@@ -161,41 +162,61 @@ def calcular(bodies: List[Body]):
         body.velocity = vector_add(body.velocity, scalar_multiply(DELTA_T, body.acceleration))
         body.position = vector_add(body.position, scalar_multiply(DELTA_T, body.velocity))
 
+# Función para dibujar los cuerpos
+def draw_bodies(window, bodies):
+    for body in bodies:
+        pos_x = int(body.position[0])
+        pos_y = int(HEIGHT - body.position[1])
+        pygame.draw.circle(window, body.color, (pos_x, pos_y), int(body.radius), 0)
+
+# Función para dibujar el QuadTree
+def draw_quadtree(qtree, surface):
+    pygame.draw.rect(surface, (255, 255, 255), pygame.Rect(
+        qtree.boundary.x - qtree.boundary.w, HEIGHT - qtree.boundary.y - qtree.boundary.h,
+        qtree.boundary.w * 2, qtree.boundary.h * 2), 1)
+
+    if qtree.divided:
+        draw_quadtree(qtree.northeast, surface)
+        draw_quadtree(qtree.northwest, surface)
+        draw_quadtree(qtree.southeast, surface)
+        draw_quadtree(qtree.southwest, surface)
+
 # Configuración inicial de Pygame
 pygame.init()
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('n-Bodies with QuadTree Optimization')
+clock = pygame.time.Clock()
 
 # Crear los cuerpos y asignar posiciones aleatorias
 bodies = [Body(radius=random.uniform(3, 8)) for _ in range(NUMBER_BODIES)]
 for body in bodies:
     body.random_position(WIDTH, HEIGHT)
 
-# Agregar un cuerpo masivo en el centro con color predeterminado
-massive_body = Body(position=[WIDTH / 2, HEIGHT / 2], mass=1000000.0, radius=15.0, color=(255, 0, 0))  # Rojo
-bodies.append(massive_body)
+# Control de simulación
+paused = False
 
-# Ciclo principal de simulación
+# Ciclo principal de Pygame
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_p:
+                paused = not paused
+            if event.key == pygame.K_r:
+                bodies = [Body(radius=random.uniform(3, 8)) for _ in range(NUMBER_BODIES)]
+                for body in bodies:
+                    body.random_position(WIDTH, HEIGHT)
 
-    # Limpiar la pantalla
     window.fill((0, 0, 0))
 
-    # Calcular la dinámica de los cuerpos
-    calcular(bodies)
+    if not paused:
+        calcular(bodies)
 
-    # Dibujar los cuerpos con suavizado
-    for body in bodies:
-        pos_x = int(body.position[0])
-        pos_y = int(HEIGHT - body.position[1])
-        pygame.draw.circle(window, body.color, (pos_x, pos_y), int(body.radius), 0)  # Dibujar el cuerpo
+    draw_bodies(window, bodies)
 
-    # Actualizar la pantalla
-    pygame.display.flip()
+    pygame.display.update()
+    clock.tick(FPS)
 
-# Cerrar Pygame
 pygame.quit()
